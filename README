@@ -1,0 +1,55 @@
+The Module was built upon some Lift_Module conventions https://www.assembla.com/wiki/show/liftweb/Modules.
+Since it was only built upon some of them, I don't want to call it a Lift_Module.
+
+I would have used the builtin LDAP Module that comes with Lift http://www.liftweb.net, but having 
+a special use case with two different LDAP Servers, I thought trying to build a module and talking 
+to different LDAP servers is a great learning experience.
+
+Some of the code was already used in https://github.com/spirit-fhs/news/. Extracting this and 
+putting it into a module hoping that more students/employees may use this in a Lift project.
+
+How to get started:
+Clone this repository and publish the project local: 
+
+$ git clone https://github.com/mdenison/FhS-LDAP-Module
+$ cd FhS-LDAP-Module
+$ sbt update package publish-local
+
+Now we can use the FhS-LDAP-Module in our Lift project. Add as SBT Dependency:
+  def fhsldap = "de.codecarving" %% "fhsldap" % "1.0"
+
+Adding properties to the src/main/resources/props/default.props:
+-----------------------------------------------------------------
+# LDAP Props                     #
+# Need ldap1 for email adresses  #
+# Need zefi for Authentication   #
+
+ldap.server.ldap1=ldaps://zefi.....:636
+ldap.server.zefi=ldaps://ldap1....:636
+
+# The location of the sslstore file! VERY IMPORTANT!
+ldap.server.truststore=
+
+# Declaring admins. Seperated the FHS-ID with a semicolon.
+spirit.server.admins=user1;user2
+
+# Default email adresse, if servers dont have any for a user!
+spirit.default.email=
+
+# Wether we want to use LDAP Auth or not.
+# If set to false anyone with any username can log in. Only for
+# testing purposes.
+ldap.server.auth.use=true
+
+# section where we define default values if we wont use ldap auth
+default.email=
+default.gidNumber=
+default.cn=
+default.displayName=
+------------------------------------------------------------------
+
+Now we can import and init the Module in the Boot.scala
+  fhsldap.init
+
+This will add Login/Logout to the Sitemap.
+
