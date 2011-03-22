@@ -48,7 +48,7 @@ object User extends User with MetaMegaProtoUser[User] with LDAPUser {
 
   override def loginXhtml = {
     (<lift:surround with="default" at ="content">
-      <h3>{"Derzeit ist der Login nur für Mitarbeiter!"}</h3>
+      <h3>{"Login nur mit gültiger FHS-ID möglich!"}</h3>
       <form method="post" action={S.uri} name="login">
       <table>
         <tr><td colspan="2">{S.??("log.in")}</td></tr>
