@@ -101,9 +101,27 @@ trait LDAPUser extends Loggable {
         val ctx2: DirContext = new InitialDirContext(authEnv)
         true
       } catch {
-        case e =>
-          S error "Could not log in."
-          logger error e.printStackTrace.toString
+        case a: AuthenticationException =>
+          logger error a.printStackTrace.toString
+          S error "Error: Bitte richtige FHS-ID und Passwort angeben"
+          S redirectTo "/user_mgt/login"
+          false
+        case b: NamingException =>
+          logger error b.printStackTrace.toString
+          S error "Error: Der LDAP Server ist derzeit nicht erreichbar!"
+          S redirectTo "/user_mgt/login"
+          false
+        case c: TimeLimitExceededException =>
+          logger error c.printStackTrace.toString
+          S error "Error: Der LDAP Server ist derzeit nicht erreichbar!"
+          S redirectTo "/user_mgt/login"
+          false
+        case d =>
+          logger error d.printStackTrace.toString
+          S error "Error: Eine Störung liegt vor!"
+          S redirectTo "/user_mgt/login"
+          false
+        case _ =>
           false
       }
     } else {
