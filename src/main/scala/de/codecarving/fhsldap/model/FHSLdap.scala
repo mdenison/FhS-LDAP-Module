@@ -143,7 +143,7 @@ trait LDAPUser extends Loggable {
   }
 }
 
-object LDAPUtils {
+object LDAPUtils extends Loggable {
 
   /**
    * @param fhsid: Student or Employee FHS-ID.
@@ -152,37 +152,43 @@ object LDAPUtils {
    * Using Zefi for Auth and LDAP1 to get our "pretty" email adresses.
    */
   def getEmailfromLDAP1(fhsid: String, gidNumber: Int): Box[String] = {
-    if(Props.get("ldap.server.auth.use", "false") == "true") {
-      System.setProperty("javax.net.ssl.trustStore", Props.get("ldap.server.truststore", "sslstore"))
-      val base = gidNumber match {
-        case 1002 => "ou=students,dc=fh-sm,dc=de"
-        case 1001 => "ou=people,dc=fh-sm,dc=de"
-      }
+    try {
+      if(Props.get("ldap.server.auth.use", "false") == "true") {
+        System.setProperty("javax.net.ssl.trustStore", Props.get("ldap.server.truststore", "sslstore"))
+        val base = gidNumber match {
+          case 1002 => "ou=students,dc=fh-sm,dc=de"
+          case 1001 => "ou=people,dc=fh-sm,dc=de"
+        }
 
-      val dn = "uid=" + fhsid + "," + base
-      val ldapURL = Props.get("ldap.server.ldap1", "")
+        val dn = "uid=" + fhsid + "," + base
+        val ldapURL = Props.get("ldap.server.ldap1", "")
 
-      val emailEnv = new Hashtable[String,String]
-        emailEnv.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
-        emailEnv.put(Context.PROVIDER_URL, ldapURL)
-      val ctx: DirContext = new InitialDirContext(emailEnv)
-      val attrs: Attributes = ctx.getAttributes(dn)
-      val ids = attrs.getIDs.toList
+        val emailEnv = new Hashtable[String,String]
+          emailEnv.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+          emailEnv.put(Context.PROVIDER_URL, ldapURL)
+        val ctx: DirContext = new InitialDirContext(emailEnv)
+        val attrs: Attributes = ctx.getAttributes(dn)
+        val ids = attrs.getIDs.toList
 
-      def getAttrValList(id: String): List[String] =
-        if (ids contains id)
-          for (i <- 0 to attrs.get(id).size - 1)
-            yield attrs.get(id).get(i).toString
-        else
-          Nil: List[String]
+        def getAttrValList(id: String): List[String] =
+          if (ids contains id)
+            for (i <- 0 to attrs.get(id).size - 1)
+              yield attrs.get(id).get(i).toString
+          else
+            Nil: List[String]
 
-      val emails = getAttrValList("mail") map { _.toString } filter { email =>
-        email.matches("[a-zA-Z][.].\\w.*@fh-sm.de") ||
-        email.matches("[a-zA-Z][.].\\w.*@stud.fh-sm.de")
-      }
-      if (emails isEmpty) Empty else Full(emails.head)
-    } else {
+        val emails = getAttrValList("mail") map { _.toString } filter { email =>
+          email.matches("[a-zA-Z][.].\\w.*@fh-sm.de") ||
+          email.matches("[a-zA-Z][.].\\w.*@stud.fh-sm.de")
+        }
+        if (emails isEmpty) Empty else Full(emails.head)
+      } else {
         Full(Props.get("spirit.default.email", ""))
+      }
+    } catch {
+       case any =>
+          logger error any.printStackTrace.toString
+          Full("")
     }
   }
 
@@ -193,23 +199,30 @@ object LDAPUtils {
    * @return Box[String] Either the Attribute is found, an empty String or a default value from the Props file.
    */
   def getAttribute(key: String, fhsid: String): Box[String] = {
-    if(Props.get("ldap.server.auth.use", "false") == "true") {
-      val env = new Hashtable[String,String]
-      val ldapURL = Props.get("ldap.server.zefi", "")
 
-      env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
-      env.put(Context.PROVIDER_URL, ldapURL)
+    try {
+      if(Props.get("ldap.server.auth.use", "false") == "true") {
+        val env = new Hashtable[String,String]
+        val ldapURL = Props.get("ldap.server.zefi", "")
 
-      val ctx: DirContext = new InitialDirContext(env)
-      val dn = "uid=" + fhsid + "," + "ou=people,ou=in,dc=fh-schmalkalden,dc=de"
-      val attrs: Attributes = ctx.getAttributes(dn)
+        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+        env.put(Context.PROVIDER_URL, ldapURL)
 
-      val ids = attrs.getIDs.toList
-      def getAttrVal(id: String) =
-        if (ids contains id) attrs.get(id).get(0).toString else ""
-      Full(getAttrVal(key))
-    } else {
-      Full(Props.get("default." + key, ""))
-    }
+        val ctx: DirContext = new InitialDirContext(env)
+        val dn = "uid=" + fhsid + "," + "ou=people,ou=in,dc=fh-schmalkalden,dc=de"
+        val attrs: Attributes = ctx.getAttributes(dn)
+
+        val ids = attrs.getIDs.toList
+        def getAttrVal(id: String) =
+          if (ids contains id) attrs.get(id).get(0).toString else ""
+        Full(getAttrVal(key))
+      } else {
+        Full(Props.get("default." + key, ""))
+      }
+    } catch {
+        case any =>
+          logger error any.printStackTrace.toString
+          Full("")
+      }
   }
 }
