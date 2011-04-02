@@ -145,6 +145,8 @@ trait LDAPUser extends Loggable {
 
 object LDAPUtils extends Loggable {
 
+  System.setProperty("javax.net.ssl.trustStore", Props.get("ldap.server.truststore", "sslstore"))
+
   /**
    * @param fhsid: Student or Employee FHS-ID.
    * @param gidNumber: 1001 for employees or 1002 for students.
@@ -154,7 +156,7 @@ object LDAPUtils extends Loggable {
   def getEmailfromLDAP1(fhsid: String, gidNumber: Int): Box[String] = {
     try {
       if(Props.get("ldap.server.auth.use", "false") == "true") {
-        System.setProperty("javax.net.ssl.trustStore", Props.get("ldap.server.truststore", "sslstore"))
+
         val base = gidNumber match {
           case 1002 => "ou=students,dc=fh-sm,dc=de"
           case 1001 => "ou=people,dc=fh-sm,dc=de"
