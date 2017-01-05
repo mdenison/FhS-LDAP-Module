@@ -94,7 +94,7 @@ trait LDAPUser extends Loggable {
 
       try {
         authEnv.put(Context.SECURITY_AUTHENTICATION, "simple")
-    	  authEnv.put(Context.SECURITY_PRINCIPAL, dn)
+    	authEnv.put(Context.SECURITY_PRINCIPAL, dn)
         authEnv.put(Context.SECURITY_CREDENTIALS, password)
         authEnv.put(Context.SECURITY_PROTOCOL, "SSL")
 
